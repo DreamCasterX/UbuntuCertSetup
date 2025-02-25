@@ -238,7 +238,7 @@ sudo apt update && sudo apt upgrade -y
 ! grep -q "checkbox-dev/stable" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null && sudo add-apt-repository ppa:checkbox-dev/stable -y
 for lib in maas-cert-server vim openssh-server ifstat checkbox-ng; do
     if ! dpkg -l | grep "$lib" > /dev/null; then
-        sudo apt update && sudo apt install $lib -y || echo "❌ Error installing $lib" && exit 1
+        sudo apt update && sudo apt install $lib -y || { echo -e "${red}Error installing $lib${nc}"; exit 1; }
     fi
 done
 echo -e "\n${green}Done!${nc}\n" 

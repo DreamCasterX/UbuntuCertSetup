@@ -12,8 +12,8 @@ __version__="1.0"
 
 # User-defined settings
 TC_username='master'
-log_dir="/home/$TC_username/Desktop/Ubuntu_log"
-NFS_dir='/media/Mike/Ubuntu'
+log_dir="/home/$TC_username/Desktop/Ubuntu_logs"
+NFS_dir='/media/Mike/test'
 secure_id=''
 
 
@@ -387,7 +387,7 @@ elif [[ "$OPTION" == [Ss] ]]; then
     echo -e "Select a network speed for iperf3 testing"
     read -p "(1)1G-10G   (2)25G   (3)100G: " SPEED
     while [[ "$SPEED" != [123] ]]; do 
-        read -p "(1)1G-10G   (2)25G   (3)100G   : " SPEED
+        read -p "(1)1G-10G   (2)25G   (3)100G: " SPEED
     done
     pkill iperf3
     if [[ $SPEED == '1' ]]; then
@@ -398,7 +398,7 @@ elif [[ "$OPTION" == [Ss] ]]; then
         # Start iperf3 for 25G speed
         start-iperf3 -a $TC_internal_IP -n 6
         # Modify TC network MTU in setting (For speed > 25G only)
-        connection_name_internal=$(nmcli device show | grep -B10 "$TC_internal_IP" | awk '{$1=""; sub(/^ */, ""); gsub(/[[:space:]]*$/, ""); print}')
+        connection_name_internal=$(nmcli device show | grep -B10 "$TC_internal_IP" | grep "GENERAL.CONNECTION" | awk '{$1=""; sub(/^ */, ""); gsub(/[[:space:]]*$/, ""); print}')
         sudo nmcli connection modify "$connection_name_internal" 802-3-ethernet.mtu 9000  # default: automatic (0)
         sudo nmcli connection up "$connection_name_internal" > /dev/null  
         # Modify SUT network MTU in YAML file (For speed > 25G only)   
@@ -411,7 +411,7 @@ elif [[ "$OPTION" == [Ss] ]]; then
         # Start iperf3 for 100G speed
         start-iperf3 -a $TC_internal_IP -n 20
         # Modify TC network MTU in setting (For speed > 25G only)
-        connection_name_internal=$(nmcli device show | grep -B10 "$TC_internal_IP" | awk '{$1=""; sub(/^ */, ""); gsub(/[[:space:]]*$/, ""); print}')
+        connection_name_internal=$(nmcli device show | grep -B10 "$TC_internal_IP" | grep "GENERAL.CONNECTION" | awk '{$1=""; sub(/^ */, ""); gsub(/[[:space:]]*$/, ""); print}')
         sudo nmcli connection modify "$connection_name_internal" 802-3-ethernet.mtu 9000  # default: automatic (0)
         sudo nmcli connection up "$connection_name_internal" > /dev/null 
         # Modify SUT network MTU in YAML file (For speed > 25G only)   
@@ -462,9 +462,18 @@ elif [[ "$OPTION" == [Ss] ]]; then
     #sudo rm -rf iperf3.0 crash 
 
 
+    echo
+    echo "----------------------------------------"
+    echo "✅ UBUNTU CERTIFICATION SETUP COMPLETED"
+    echo "----------------------------------------"
+    echo
+
+
     # Run checkbox
+    # echo -e "\nStart running checkbox...\n" &&
     # certify-ubuntu-server(24.04用這個指令) 
     # certify-22.04(22.04用這個指令) 
+
 
 elif [[ "$OPTION" == [Cc] ]]; then
     echo

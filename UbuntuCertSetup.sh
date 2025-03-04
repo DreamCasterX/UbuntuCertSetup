@@ -2,12 +2,12 @@
 
 
 # CREATOR: Mike Lu (klu7@lenovo.com)
-# CHANGE DATE: 3/3/2025
+# CHANGE DATE: 3/4/2025
 __version__="1.0"
 
 
 # Ubuntu Hardware Certification Test Environment Setup Script
-# [Note] This script is applicable to physical machine only. 
+
 
 
 # User-defined settings
@@ -30,6 +30,7 @@ SUT_username='ubuntu'
 SUT_passwd='ubuntu'
 Config_file_2204='/etc/xdg/canonical-certification.conf'
 Config_file_2404='/etc/xdg/canonical-certification.conf.dpkg.new'
+cloud_image_name='jammy-server-cloudimg-amd64'
 red='\e[41m'
 green='\e[32m'
 yellow='\e[93m'
@@ -133,6 +134,10 @@ if [[ "$OPTION" == [Tt] ]]; then
     timedatectl set-ntp 0 && sleep 1 && timedatectl set-ntp 1
 
 
+    # Verify defined user name
+    [[ $USERNAME != $TC_username ]] && echo -e "${yellow}Please change the TC username to '$TC_username' as defined.${nc}\n"; exit 1
+    
+    
     # Enable auto login
     NEW_USER=$(w | awk 'END {print $1}')
     CONFIG_FILE="/etc/gdm3/custom.conf"
@@ -276,9 +281,8 @@ if [[ "$OPTION" == [Tt] ]]; then
     echo "------------------------"
     echo
     sudo apt update && sudo apt upgrade -y
-    # sudo apt install open-vm-tools -y (For VM only)
     ! grep -q "checkbox-dev/stable" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null && sudo add-apt-repository ppa:checkbox-dev/stable -y
-    for lib in maas-cert-server vim openssh-server ifstat checkbox-ng sshpass; do
+    for lib in maas-cert-server vim openssh-server ifstat checkbox-ng open-vm-tools sshpass; do
         if ! dpkg -l | grep "$lib" > /dev/null; then
             sudo apt update && sudo apt install $lib -y || { echo -e "${red}Error installing $lib${nc}"; exit 1; }
         fi
@@ -355,9 +359,9 @@ elif [[ "$OPTION" == [Ss] ]]; then
     echo "----------------"
     echo
     sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" "
-    echo '$SUT_passwd' | sudo -S timedatectl set-timezone $TIME_ZONE
-    echo '$SUT_passwd' | sudo -S ln -sf /usr/share/zoneinfo/$TIME_ZONE /etc/localtime
-    echo '$SUT_passwd' | sudo -S timedatectl set-ntp 0 && sleep 1 && echo '$SUT_passwd' | sudo -S timedatectl set-ntp 1
+    echo "$SUT_passwd" | sudo -S timedatectl set-timezone $TIME_ZONE
+    echo "$SUT_passwd" | sudo -S ln -sf /usr/share/zoneinfo/$TIME_ZONE /etc/localtime
+    echo "$SUT_passwd" | sudo -S timedatectl set-ntp 0 && sleep 1 && echo "$SUT_passwd" | sudo -S timedatectl set-ntp 1
     "
     [[ $? = 0 ]] && echo -e "\n${green}Done!${nc}\n" || { echo -e "${red}Failed to set time zone on SUT${nc}"; exit 1; }
     
@@ -403,10 +407,10 @@ elif [[ "$OPTION" == [Ss] ]]; then
         sudo nmcli connection up "$connection_name_internal" > /dev/null  
         # Modify SUT network MTU in YAML file (For speed > 25G only)   
         sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" "
-        echo '$SUT_passwd' | sudo -S sed -i 's/mtu: 1500/mtu: 9000\n    optional: true/' /etc/netplan/50-cloud-init.yaml
-        echo '$SUT_passwd' | sudo -S netplan apply
+        echo "$SUT_passwd" | sudo -S sed -i 's/mtu: 1500/mtu: 9000\n    optional: true/' /etc/netplan/50-cloud-init.yaml
+        echo "$SUT_passwd" | sudo -S netplan apply
         "
-                
+
     elif [[ $SPEED == '3' ]]; then
         # Start iperf3 for 100G speed
         start-iperf3 -a $TC_internal_IP -n 20
@@ -416,8 +420,8 @@ elif [[ "$OPTION" == [Ss] ]]; then
         sudo nmcli connection up "$connection_name_internal" > /dev/null 
         # Modify SUT network MTU in YAML file (For speed > 25G only)   
         sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" "
-        echo '$SUT_passwd' | sudo -S sed -i 's/mtu: 1500/mtu: 9000\n    optional: true/' /etc/netplan/50-cloud-init.yaml
-        echo '$SUT_passwd' | sudo -S netplan apply
+        echo "$SUT_passwd" | sudo -S sed -i 's/mtu: 1500/mtu: 9000\n    optional: true/' /etc/netplan/50-cloud-init.yaml
+        echo "$SUT_passwd" | sudo -S netplan apply
         "
     fi
     [[ $? = 0 ]] && echo -e "\n${green}Done!${nc}\n" || { echo -e "${red}Failed to modify MTU on TC or SUT${nc}"; exit 1; }
@@ -431,35 +435,44 @@ elif [[ "$OPTION" == [Ss] ]]; then
     echo
     if [[ $SUT_OS_VER == '22.04' ]]; then
         checkbox_setting=$Config_file_2204
-    else
+    elif [[ $SUT_OS_VER == '24.04' ]]; then
         checkbox_setting=$Config_file_2404
+    else
+        echo -e "${red}The SUT OS version is neither 22.04 nor 24.04${nc}"
+        exit 1
     fi
     
     sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" "
-    [common]
-    
-    sed -i 's/# [transport:c3]/[transport:c3]/' $checkbox_setting
-    sed -i 's/# secure_id = /secure_id = $secure_id/' $checkbox_setting
-    
-    # KVM_IMAGE = http://cloud-images.ubuntu.com/daily/server/daily/server/{release}
-
-    ! grep -q KVM_IMAGE = http://192.168.20.1/cloud/jammy-server-cloudimg-amd64.img              # 取消注释并更改jammy-server-cloudimg-amd64.img文件的地址
-    ! grep -q UVT_IMAGE_OR_SOURCE = http://192.168.20.1/cloud/jammy-server-cloudimg-amd64.img    # 添加UVT参数
-    
-    ! grep -q LXD_ROOTFS = http://$TC_internal_IP/cloud/jammy-server-cloudimg-amd64.squashfs >> /etc/xdg/canonical-certification.conf  
-    ! grep -q LLXD_TEMPLATE = http://$TC_internal_IP/cloud/jammy-server-cloudimg-amd64-lxd.tar.xz >> /etc/xdg/canonical-certification.conf  
-    ! grep -q TEST_TARGET_IPERF = $TC_internal_IP  >> /etc/xdg/canonical-certification.conf  
+    echo "$SUT_passwd" | sudo -S sed -i 's/#\[transport:c3\]/\[transport:c3\]/' $checkbox_setting
+    echo "$SUT_passwd" | sudo -S sed -i 's/#secure_id =.*/secure_id = $secure_id/' $checkbox_setting
+    echo "$SUT_passwd" | sudo -S sed -i \"s|# KVM_IMAGE = /path/to/cloudimage-filename.img|KVM_IMAGE = http://$TC_internal_IP/cloud/$cloud_image_name.img|\" $checkbox_setting
+    echo "$SUT_passwd" | sudo -S grep -q 'UVT_IMAGE_OR_SOURCE = http://$TC_internal_IP/cloud/$cloud_image_name.img' $checkbox_setting || (echo "$SUT_passwd" | sudo -S bash -c 'echo "UVT_IMAGE_OR_SOURCE = http://$TC_internal_IP/cloud/$cloud_image_name.img" >> $checkbox_setting') 
+    echo "$SUT_passwd" | sudo -S sed -i \"s|#LXD_ROOTFS =.*|LXD_ROOTFS = http://$TC_internal_IP/cloud/$cloud_image_name.squashfs|\" $checkbox_setting
+    echo "$SUT_passwd" | sudo -S sed -i \"s|#LXD_TEMPLATE =.*|LXD_TEMPLATE = http://$TC_internal_IP/cloud/$cloud_image_name-lxd.tar.xz|\" $checkbox_setting
+    echo "$SUT_passwd" | sudo -S sed -i 's/TEST_TARGET_IPERF =.*/TEST_TARGET_IPERF = $TC_internal_IP/' $checkbox_setting
     "
+    [[ $? = 0 ]] && echo -e "\n${green}Done!${nc}\n" || { echo -e "${red}Failed to update checkbox config file on SUT${nc}"; exit 1; }
     
     
-    # 檢查環境配置 
-    #canonical-certification-precheck 
+    # Run checkbix pre-check
+    echo
+    echo "------------------------"
+    echo "RUN CHECKBOX PRECHECK..."
+    echo "------------------------"
+    echo
+    sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" "
+    canonical-certification-precheck 
+    "
+    echo
+    read -p "Is it okay to continue (y/n)? " ANSWER_2 
+    while [[ "$ANSWER_2" != [YyNn] ]]; do 
+        read -p "Is it okay to continue (y/n)? " ANSWER_2 
+    done     
+    [[ "$ANSWER_2" == [Nn] ]] && exit 1
    
  
-    #刪除文件 
-    #路徑: /var/crash 
-
-    #sudo rm -rf iperf3.0 crash 
+    # Delete crash file
+    sudo rm -rf /var/crash/iperf3.0 crash 
 
 
     echo
@@ -467,14 +480,29 @@ elif [[ "$OPTION" == [Ss] ]]; then
     echo "✅ UBUNTU CERTIFICATION SETUP COMPLETED"
     echo "----------------------------------------"
     echo
-
-
+    
     # Run checkbox
-    # echo -e "\nStart running checkbox...\n" &&
-    # certify-ubuntu-server(24.04用這個指令) 
-    # certify-22.04(22.04用這個指令) 
+    read -p "Start running checkbox testing now (y/n)? " ANSWER_3 
+    while [[ "$ANSWER_3" != [YyNn] ]]; do 
+        read -p "Start running checkbox testing now (y/n)? " ANSWER_3 
+    done     
+    [[ "$ANSWER_3" == [Nn] ]] && exit 1
 
-
+    
+    if [[ $SUT_OS_VER == '22.04' ]]; then
+        sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" "
+        certify-22.04
+        "
+    elif [[ $SUT_OS_VER == '24.04' ]]; then
+        sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" "
+        certify-ubuntu-server
+        "
+    else
+        echo -e "${red}The SUT OS version is neither 22.04 nor 24.04${nc}"
+        exit 1
+    fi
+    
+    
 elif [[ "$OPTION" == [Cc] ]]; then
     echo
     read -p "Enter SUT's IP: " SUT_IP

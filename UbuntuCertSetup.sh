@@ -307,6 +307,9 @@ if [[ "$OPTION" == [Tt] ]]; then
 
 
     # Run MaaS setup tool
+    # [Hint] Do you want to set up this computer to automatically start NAT (Y/n)? --> y
+    # [Hint] Do you want to mirror an archive site for local use (y/N)? --> n
+    # [Hint] Do you want to set up a local cloud image mirror for the virtualization tests (Y/n)?  --> y
     sudo maniacs-setup
   
     echo

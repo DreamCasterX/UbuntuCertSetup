@@ -72,7 +72,7 @@ if [[ $__version__ != $new_version ]]; then
         rm -f README.md
         popd > /dev/null 2>&1
         sleep 3
-        sudo chmod 755 UbuntuCertSetup.sh
+        sudo chmod 777 UbuntuCertSetup.sh
         echo -e "Successfully updated! Please run UbuntuCertSetup.sh again.\n\n" ; exit 1
     else
         echo -e "\n❌ Error occurred while downloading the update" ; exit 1
@@ -135,7 +135,7 @@ if [[ "$OPTION" == [Tt] ]]; then
 
 
     # Verify defined user name
-    [[ $USERNAME != $TC_username ]] && echo -e "${yellow}Please change the TC username to '$TC_username' as defined.${nc}\n"; exit 1
+    [[ $USERNAME != $TC_username ]] && { echo -e "${yellow}Please change the TC username to '$TC_username' as defined.${nc}\n"; exit 1; }
     
     
     # Enable auto login

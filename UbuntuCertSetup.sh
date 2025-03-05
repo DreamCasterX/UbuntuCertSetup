@@ -87,7 +87,7 @@ echo "╭───────────────────────�
 echo "│    Ubuntu Certification Test Environment Setup      │"
 echo "╰─────────────────────────────────────────────────────╯"
 echo "Select an option to configure"
-read -p "(t)TC  (s)SUT:  (c)Copy log: " OPTION
+read -p "(t)TC  (s)SUT   (c)Copy log: " OPTION
 while [[ "$OPTION" != [SsTtCc] ]]; do 
     read -p "(t)TC  (s)SUT   (c)Copy log: " OPTION
 done   
@@ -475,7 +475,9 @@ elif [[ "$OPTION" == [Ss] ]]; then
    
  
     # Delete crash file
-    sudo rm -rf /var/crash/iperf3.0 crash 
+    sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" "
+    echo "$SUT_passwd" | sudo -S rm -rf /var/crash/iperf3.0 crash 
+    "
 
 
     echo

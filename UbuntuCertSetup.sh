@@ -46,38 +46,38 @@ fi
 
 # Ensure Internet is connected
 CheckInternet() {
-nslookup "google.com" > /dev/null
-if [ $? != 0 ]; then 
-    echo -e "${red}No Internet connection! Please check your network${nc}" && sleep 5 && exit 1
-fi
+    nslookup "google.com" > /dev/null
+    if [ $? != 0 ]; then 
+        echo -e "${red}No Internet connection! Please check your network${nc}" && sleep 5 && exit 1
+    fi
 }
 CheckInternet
     
 
 # Check the latest update of this script
 UpdateScript() {
-release_url=https://api.github.com/repos/DreamCasterX/UbuntuCertSetup/releases/latest
-new_version=$(wget -qO- "${release_url}" | grep '"tag_name":' | awk -F\" '{print $4}')
-release_note=$(wget -qO- "${release_url}" | grep '"body":' | awk -F\" '{print $4}')
-tarball_url="https://github.com/DreamCasterX/UbuntuCertSetup/archive/refs/tags/${new_version}.tar.gz"
-if [[ $__version__ != $new_version ]]; then
-    echo -e "⭐️ New version found!\n\nVersion: $new_version\nRelease note:\n$release_note"
-    sleep 2
-    echo -e "\nDownloading update..."
-    pushd "$PWD" > /dev/null 2>&1
-    wget --quiet --no-check-certificate --tries=3 --waitretry=2 --output-document=".UbuntuCertSetup.tar.gz" "${tarball_url}"
-    if [[ -e ".UbuntuCertSetup.tar.gz" ]]; then
-        tar -xf .UbuntuCertSetup.tar.gz -C "$PWD" --strip-components 1 > /dev/null 2>&1
-        rm -f .UbuntuCertSetup.tar.gz
-        rm -f README.md
-        popd > /dev/null 2>&1
-        sleep 3
-        sudo chmod 777 UbuntuCertSetup.sh
-        echo -e "Successfully updated! Please run UbuntuCertSetup.sh again.\n\n" ; exit 1
-    else
-        echo -e "\n❌ Error occurred while downloading the update" ; exit 1
-    fi 
-fi
+    release_url=https://api.github.com/repos/DreamCasterX/UbuntuCertSetup/releases/latest
+    new_version=$(wget -qO- "${release_url}" | grep '"tag_name":' | awk -F\" '{print $4}')
+    release_note=$(wget -qO- "${release_url}" | grep '"body":' | awk -F\" '{print $4}')
+    tarball_url="https://github.com/DreamCasterX/UbuntuCertSetup/archive/refs/tags/${new_version}.tar.gz"
+    if [[ $__version__ != $new_version ]]; then
+        echo -e "⭐️ New version found!\n\nVersion: $new_version\nRelease note:\n$release_note"
+        sleep 2
+        echo -e "\nDownloading update..."
+        pushd "$PWD" > /dev/null 2>&1
+        wget --quiet --no-check-certificate --tries=3 --waitretry=2 --output-document=".UbuntuCertSetup.tar.gz" "${tarball_url}"
+        if [[ -e ".UbuntuCertSetup.tar.gz" ]]; then
+            tar -xf .UbuntuCertSetup.tar.gz -C "$PWD" --strip-components 1 > /dev/null 2>&1
+            rm -f .UbuntuCertSetup.tar.gz
+            rm -f README.md
+            popd > /dev/null 2>&1
+            sleep 3
+            sudo chmod 777 UbuntuCertSetup.sh
+            echo -e "Successfully updated! Please run UbuntuCertSetup.sh again.\n\n" ; exit 1
+        else
+            echo -e "\n❌ Error occurred while downloading the update" ; exit 1
+        fi 
+    fi
 }
 # UpdateScript
 

@@ -86,6 +86,18 @@ UpdateScript() {
 echo "╭─────────────────────────────────────────────────────╮"
 echo "│    Ubuntu Certification Test Environment Setup      │"
 echo "╰─────────────────────────────────────────────────────╯"
+KERNEL=$(uname -r)
+product_name=`cat /sys/class/dmi/id/product_name`
+CPU_info=`grep "model name" /proc/cpuinfo | head -1 | cut -d ':' -f2`
+MEM_info=`sudo dmidecode -t memory | grep -i size | grep -v "No Module Installed" | awk '{sum += $2} END {print sum " GB"}'`
+storage_info=`sudo parted -l | grep "Disk /dev/" | grep -v "loop" | awk '{sum += $3} END {print sum " GB"}'`
+echo
+echo -e "Product Name: ${yellow}"$product_name"${nc}"
+echo -e "CPU:${yellow}"$CPU_info"${nc}"
+echo -e "DIMM: ${yellow}"$MEM_info"${nc}"
+echo -e "Storage: ${yellow}"$storage_info"${nc}"
+echo -e "Kernel: ${yellow}"$KERNEL"${nc}"
+echo
 echo "Select an option to configure"
 read -p "(t)TC  (s)SUT   (c)Copy log: " OPTION
 while [[ "$OPTION" != [SsTtCc] ]]; do 

@@ -350,7 +350,7 @@ elif [[ "$OPTION" == [Ss] ]]; then
    
     # Display SUT information
     SUT_OS_VER=$(sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" "cat /etc/os-release | grep ^VERSION_ID= | awk -F= '{print \$2}' | cut -d '\"' -f2")
-    SUT_kernel=$(sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" "uname -r") #要先ssh到SUT
+    SUT_kernel=$(sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" "uname -r")
     sb_state=$(sshpass -p "$SUT_passwd" ssh -o StrictHostKeyChecking=no "$SUT_username@$SUT_IP" 'mokutil --sb-state | cut -d " " -f2')
     echo
     echo "------------------------"

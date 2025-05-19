@@ -99,9 +99,9 @@ echo -e "Storage: ${yellow}"$storage_info"${nc}"
 echo -e "Kernel: ${yellow}"$KERNEL"${nc}"
 echo
 echo "Select an option to configure"
-read -p "(t)TC  (s)SUT   (c)Copy log: " OPTION
+read -p "(t)TC  (s)SUT  (c)Copy log: " OPTION
 while [[ "$OPTION" != [SsTtCc] ]]; do 
-    read -p "(t)TC  (s)SUT   (c)Copy log: " OPTION
+    read -p "(t)TC  (s)SUT  (c)Copy log: " OPTION
 done   
 
 
@@ -331,7 +331,7 @@ if [[ "$OPTION" == [Tt] ]]; then
     echo
     
     # Launch firefox and navigate to the internal IP
-    echo -e "\nOpenning firefox for X11\n" && sudo -H -u $USERNAME firefox $TC_internal_IP > /dev/null 2>&1
+    echo -e "\nOpenning firefox and visit http://"$TC_internal_IP" for X11\n" && sudo -H -u $USERNAME firefox $TC_internal_IP > /dev/null 2>&1
     
        
 elif [[ "$OPTION" == [Ss] ]]; then

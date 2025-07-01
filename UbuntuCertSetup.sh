@@ -2,7 +2,7 @@
 
 
 # CREATOR: Mike Lu (klu7@lenovo.com)
-# CHANGE DATE: 3/4/2025
+# CHANGE DATE: 6/2/2025
 __version__="1.0"
 
 
@@ -11,26 +11,27 @@ __version__="1.0"
 
 
 # User-defined settings
-TC_username='master'
-log_dir="/home/$TC_username/Desktop/Ubuntu_logs"
-NFS_dir='/media/Mike/test'
-secure_id=''
-
-
-# Fixed settings
 TIME_ZONE='Asia/Taipei'
+TC_username='master'
 TC_internal_IP='192.168.20.1'
 TC_internal_netmask='24'
 TC_external_netmask='22'
 TC_external_gateway='192.168.4.7'
-TC_external_dns='10.240.0.10'
-NFS_IP='10.241.180.56'
-NFS_port='6000'
+TC_external_dns='10.241.96.14'
 SUT_username='ubuntu'
 SUT_passwd='ubuntu'
+NFS_IP='10.241.180.56'
+NFS_port='6000'
+log_dir="/home/$TC_username/Desktop/Ubuntu_logs"
+NFS_dir='/media/Mike/test'
+cloud_image_name='jammy-server-cloudimg-amd64'
+secure_id=''
+maas_version='3.5'
+
+
+# Fixed settings
 Config_file_2204='/etc/xdg/canonical-certification.conf'
 Config_file_2404='/etc/xdg/canonical-certification.conf.dpkg.new'
-cloud_image_name='jammy-server-cloudimg-amd64'
 red='\e[41m'
 green='\e[32m'
 yellow='\e[93m'
@@ -141,10 +142,12 @@ if [[ "$OPTION" == [Tt] ]]; then
 
 
     # Set local time zone and reset NTP
-    timedatectl set-timezone $TIME_ZONE
-    ln -sf /usr/share/zoneinfo/$TIME_ZONE /etc/localtime
-    timedatectl set-ntp 0 && sleep 1 && timedatectl set-ntp 1
-
+    CURRENT_TIME_ZONE=$(timedatectl status | grep "Time zone" | awk '{print $3}')
+    if [ "$CURRENT_TIME_ZONE" != "$TIME_ZONE" ]; then
+        sudo timedatectl set-timezone $TIME_ZONE
+        sudo ln -sf /usr/share/zoneinfo/$TIME_ZONE /etc/localtime
+        sudo timedatectl set-ntp 0 && sleep 1 && timedatectl set-ntp 1
+    fi
 
     # Verify defined user name
     [[ $USERNAME != $TC_username ]] && { echo -e "${yellow}Please change the TC username to '$TC_username' as defined.${nc}\n"; exit 1; }
@@ -293,6 +296,8 @@ if [[ "$OPTION" == [Tt] ]]; then
     echo "------------------------"
     echo
     sudo apt update && sudo apt upgrade -y
+    snap info maas
+    ! snap list | grep -q maas && read -p 'Enter the stable version for MaaS to install (ex: 3.5 or 3.6): ' maas_version && sudo snap install maas --channel="$maas_version"/stable -y
     ! grep -q "checkbox-dev/stable" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null && sudo add-apt-repository ppa:checkbox-dev/stable -y
     for lib in maas-cert-server vim openssh-server ifstat checkbox-ng open-vm-tools sshpass; do
         if ! dpkg -l | grep "$lib" > /dev/null; then
@@ -323,7 +328,12 @@ if [[ "$OPTION" == [Tt] ]]; then
     # [Hint] Do you want to mirror an archive site for local use (y/N)? --> n
     # [Hint] Do you want to set up a local cloud image mirror for the virtualization tests (Y/n)?  --> y
     sudo maniacs-setup
-  
+    
+    if [[ $? != 0 ]]; then
+        echo -e "${red}MaaS setup tool is not completed successfully${nc}"
+        exit 1
+    fi
+    
     echo
     echo "----------------------------------------"
     echo "✅ UBUNTU CERTIFICATION SETUP COMPLETED"
